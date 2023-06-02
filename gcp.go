@@ -72,13 +72,6 @@ func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 	rt := mi.vu.Runtime()
 	obj := &Gcp{}
 
-	var options ServiceAccountKey
-	err := rt.ExportTo(c.Argument(0), &options)
-	if err != nil {
-		common.Throw(rt,
-			fmt.Errorf("Kubernetes constructor expects KubeConfig as it's argument: %w", err))
-	}
-
 	const envVar = "GOOGLE_SERVICE_ACCOUNT_KEY"
 
 	if filename := os.Getenv(envVar); filename != "" {
