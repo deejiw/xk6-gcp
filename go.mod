@@ -4,18 +4,17 @@ go 1.19
 
 require (
 	go.k6.io/k6 v0.44.1
-	golang.org/x/oauth2 v0.6.0
+	golang.org/x/oauth2 v0.8.0
 )
 
 require (
-	cloud.google.com/go/compute v1.19.0 // indirect
+	cloud.google.com/go/compute v1.20.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.27.7 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )
 
@@ -36,7 +35,6 @@ require (
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	google.golang.org/grpc v1.55.0 // indirect
 	gopkg.in/guregu/null.v3 v3.3.0 // indirect
 )
 
