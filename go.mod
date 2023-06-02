@@ -34,5 +34,3 @@ require (
 	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8 // indirect
 	gopkg.in/guregu/null.v3 v3.3.0 // indirect
 )
-
-replace google.golang.org/grpc => google.golang.org/grpc v1.29.1
