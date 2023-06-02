@@ -1,4 +1,4 @@
-package interpret
+package gcp
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	modules.Register("k6/x/interpret", New())
+	modules.Register("k6/x/gcp", New())
 }
 
 type (
@@ -44,11 +44,6 @@ func (*RootModule) NewModuleInstance(vu modules.VU) modules.Instance {
 type Gcp struct {
 	vu      modules.VU // provides methods for accessing internal k6 objects
 	jsonKey []byte
-}
-
-// KubeConfig represents the initialization settings for the kubernetes api client.
-type ServiceAccountKey struct {
-	ConfigPath string
 }
 
 func (r *Gcp) GetOauth2Token(sa string) (string, error) {
