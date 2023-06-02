@@ -74,15 +74,11 @@ func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 
 	const envVar = "GOOGLE_SERVICE_ACCOUNT_KEY"
 
-	if filename := os.Getenv(envVar); filename != "" {
-		b, err := os.ReadFile(filename)
-		if err != nil {
-			common.Throw(rt, fmt.Errorf("google: error getting credentials using %v environment variable: %v", envVar, err))
-			obj.jsonKey = b
-
-			return rt.ToValue(obj).ToObject(rt)
-		}
+	if jsonKey := os.Getenv(envVar); jsonKey != "" {
+		obj.jsonKey = []byte(jsonKey)
+		return rt.ToValue(obj).ToObject(rt)
 	}
+
 	common.Throw(rt, fmt.Errorf("environment variable %v not found", envVar))
 
 	return nil
