@@ -32,6 +32,6 @@ require (
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	google.golang.org/grpc v1.54.1
+	google.golang.org/grpc v1.55.0
 	gopkg.in/guregu/null.v3 v3.3.0 // indirect
 )
