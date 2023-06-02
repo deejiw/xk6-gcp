@@ -40,4 +40,4 @@ require (
 	gopkg.in/guregu/null.v3 v3.3.0 // indirect
 )
 
-replace google.golang.org/grpc => github.com/grpc/grpc-go v1.26.0
+replace google.golang.org/grpc => google.golang.org/grpc v1.29.1
