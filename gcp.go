@@ -46,8 +46,8 @@ type Gcp struct {
 	jsonKey []byte
 }
 
-func (r *Gcp) GetOauth2Token(sa string) (string, error) {
-	ts, err := google.JWTAccessTokenSourceFromJSON(r.jsonKey, "audience")
+func (r *Gcp) GetOauth2Token(scope string) (string, error) {
+	ts, err := google.JWTAccessTokenSourceWithScope(r.jsonKey, scope)
 	if err != nil {
 		return "", fmt.Errorf("Failed to get Oauth2 Token from JSON %v <%w>", string(r.jsonKey), err)
 	}
