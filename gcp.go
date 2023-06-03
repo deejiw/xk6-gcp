@@ -1,12 +1,14 @@
 package gcp
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/dop251/goja"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
@@ -46,18 +48,19 @@ type Gcp struct {
 	jsonKey []byte
 }
 
-func (r *Gcp) GetOauth2Token(scope string) (string, error) {
-	ts, err := google.JWTAccessTokenSourceWithScope(r.jsonKey, scope)
+func (r *Gcp) GetOAUth2Token(scope string) (*oauth2.Token, error) {
+	ctx := context.Background()
+	ts, err := google.JWTConfigFromJSON(r.jsonKey, scope)
 	if err != nil {
-		return "", fmt.Errorf("Failed to get Oauth2 Token from JSON %v <%w>", string(r.jsonKey), err)
+		return nil, fmt.Errorf("Failed to obtain JWT Config from Service Account Key <%w>", err)
 	}
 
-	token, err := ts.Token()
+	token, err := ts.TokenSource(ctx).Token()
 	if err != nil {
-		return "", fmt.Errorf("Failed to get Token: %v", err)
+		return nil, fmt.Errorf("Failed to obtain Access Token <%w>", err)
 	}
 
-	return token.AccessToken, nil
+	return token, nil
 }
 
 func (mi *ModuleInstance) Exports() modules.Exports {
