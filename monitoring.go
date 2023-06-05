@@ -10,7 +10,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-func (r *Gcp) QueryTimeSeries(projectId string, query string) ([]string, error) {
+func (r *Gcp) QueryTimeSeries(projectId string, query string) ([]*monitoringpb.TimeSeriesData, error) {
 	ctx := context.Background()
 
 	jwt, err := getJwtConfig(r.keyByte, r.scope)
@@ -33,7 +33,7 @@ func (r *Gcp) QueryTimeSeries(projectId string, query string) ([]string, error) 
 
 	iter := c.QueryTimeSeries(ctx, req)
 
-	var queryResult []string
+	var result []*monitoringpb.TimeSeriesData
 
 	for {
 		resp, err := iter.Next()
@@ -43,8 +43,8 @@ func (r *Gcp) QueryTimeSeries(projectId string, query string) ([]string, error) 
 		if err != nil {
 			return nil, fmt.Errorf("Could not list time series: %w", err)
 		}
-		queryResult = append(queryResult, resp.String())
+		result = append(result, resp)
 	}
 
-	return queryResult, nil
+	return result, nil
 }
