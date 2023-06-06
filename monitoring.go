@@ -6,10 +6,14 @@ import (
 
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"golang.org/x/oauth2"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
+// This function is querying time series data from Google Cloud Monitoring API. It takes in a project
+// ID and a query string as parameters, and returns a slice of `monitoringpb.TimeSeriesData` and an
+// error.
 func (g *Gcp) QueryTimeSeries(projectId string, query string) ([]*monitoringpb.TimeSeriesData, error) {
 	ctx := context.Background()
 
@@ -18,13 +22,11 @@ func (g *Gcp) QueryTimeSeries(projectId string, query string) ([]*monitoringpb.T
 		return nil, err
 	}
 
-	c, err := monitoring.NewQueryClient(ctx, option.WithTokenSource(jwt.TokenSource(ctx)))
+	c, err := queryClient(ctx, jwt.TokenSource(ctx))
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not initialize query client <%w>", err)
+		return nil, err
 	}
-
-	defer c.Close()
 
 	req := &monitoringpb.QueryTimeSeriesRequest{
 		Name:  "projects/" + projectId,
@@ -41,10 +43,23 @@ func (g *Gcp) QueryTimeSeries(projectId string, query string) ([]*monitoringpb.T
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("Could not list time series: %w", err)
+			return nil, fmt.Errorf("could not list time series: %w", err)
 		}
 		result = append(result, resp)
 	}
 
+	defer c.Close()
+
 	return result, nil
+}
+
+// The function initializes a query client for Google Cloud Monitoring using a token source.
+func queryClient(ctx context.Context, ts oauth2.TokenSource) (*monitoring.QueryClient, error) {
+	c, err := monitoring.NewQueryClient(ctx, option.WithTokenSource(ts))
+
+	if err != nil {
+		return nil, fmt.Errorf("could not initialize query client <%w>", err)
+	}
+
+	return c, nil
 }

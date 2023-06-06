@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/dop251/goja"
 	"go.k6.io/k6/js/common"
@@ -32,28 +33,32 @@ type (
 	}
 
 	GcpConfig struct {
-		scope []string
+		Key   ServiceAccountKey
+		Scope []string
 	}
+
+	Option func(*Gcp) error
 
 	ServiceAccountKey struct {
 		AuthProviderX509CertUrl string `json:"auth_provider_x509_cert_url"`
 		AuthURL                 string `json:"auth_uri"`
-		ClientEmail             string `json:"client_email" validate:"required"`
-		ClientID                string `json:"client_id" validate:"required"`
-		ClientSecret            string `json:"client_secret" validate:"required"`
+		ClientEmail             string `json:"client_email"`
+		ClientID                string `json:"client_id"`
+		ClientSecret            string `json:"client_secret"`
 		ClientX509CertUrl       string `json:"client_x509_cert_url"`
-		PrivateKey              string `json:"private_key" validate:"required"`
-		PrivateKeyID            string `json:"private_key_id" validate:"required"`
-		ProjectID               string `json:"project_id" validate:"required"`
-		TokenURL                string `json:"token_uri" validate:"required"`
-		Type                    string `json:"type" validate:"required"`
+		PrivateKey              string `json:"private_key"`
+		PrivateKeyID            string `json:"private_key_id"`
+		ProjectID               string `json:"project_id"`
+		TokenURL                string `json:"token_uri"`
+		Type                    string `json:"type"`
 		UniverseDomain          string `json:"universe_domain"`
 	}
 )
 
 var (
-	_ modules.Module   = &RootModule{}
-	_ modules.Instance = &ModuleInstance{}
+	_                          modules.Module   = &RootModule{}
+	_                          modules.Instance = &ModuleInstance{}
+	gcpConstructorDefaultScope                  = []string{"https://www.googleapis.com/auth/cloud-platform"}
 )
 
 func New() *RootModule {
@@ -77,35 +82,125 @@ func (mi *ModuleInstance) Exports() modules.Exports {
 func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 	rt := mi.vu.Runtime()
 	const envVar = "GOOGLE_SERVICE_ACCOUNT_KEY"
+	var options GcpConfig
+
+	err := rt.ExportTo(c.Argument(0), &options)
+	if err != nil {
+		common.Throw(rt,
+			fmt.Errorf("gcp constructor fails to read options: %w", err))
+	}
+
+	// fmt.Printf("%+v\n", options.Key)
+	// fmt.Print(options.Scope)
+
+	if !isStructEmpty(options.Key) {
+		b, err := convertToByte(options.Key)
+		if err != nil {
+			common.Throw(rt, err)
+		}
+
+		g, err := newGcpConstructor(
+			withGcpConstructorKey(b),
+			withGcpConstructorScope(options.Scope),
+		)
+
+		if err != nil {
+			common.Throw(rt, fmt.Errorf("cannot initialize gcp constructor <%w>", err))
+		}
+
+		return rt.ToValue(g).ToObject(rt)
+	}
 
 	if keyString := os.Getenv(envVar); keyString != "" {
 		key := &ServiceAccountKey{}
-
 		err := json.Unmarshal([]byte(keyString), &key)
 		if err != nil {
-			common.Throw(rt, fmt.Errorf("Cannot unmarshal environment variable %v <%w>", envVar, err))
+			common.Throw(rt, fmt.Errorf("cannot unmarshal environment variable %v <%w>", envVar, err))
 		}
 
-		var options GcpConfig
-		err = rt.ExportTo(c.Argument(0), &options)
+		b, err := convertToByte(key)
 		if err != nil {
-			common.Throw(rt,
-				fmt.Errorf("Gcp constructor expects scope as it's argument: %w", err))
+			common.Throw(rt, err)
 		}
 
-		keyByte, _ := json.Marshal(key)
+		g, err := newGcpConstructor(
+			withGcpConstructorKey(b),
+			withGcpConstructorScope(options.Scope),
+		)
 
-		obj := &Gcp{
-			// vu:        mi.vu,
-			keyByte: keyByte,
-			scope:   options.scope,
+		if err != nil {
+			common.Throw(rt, fmt.Errorf("cannot initialize gcp constructor <%w>", err))
 		}
 
-		return rt.ToValue(obj).ToObject(rt)
+		return rt.ToValue(g).ToObject(rt)
 
 	}
 
-	common.Throw(rt, fmt.Errorf("environment variable %v not found", envVar))
+	common.Throw(rt, fmt.Errorf("service account key not found. Please use %s or input 'key' parameter", envVar))
 
 	return nil
+}
+
+func convertToByte(key interface{}) ([]byte, error) {
+	b, err := json.Marshal(key)
+
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal key <%w>", err)
+	}
+
+	return b, nil
+}
+
+// The function creates a new instance of the Gcp struct with specified options.
+func newGcpConstructor(opts ...Option) (Gcp, error) {
+	g := Gcp{
+		scope: gcpConstructorDefaultScope,
+	}
+
+	for _, opt := range opts {
+		if err := opt(&g); err != nil {
+			return Gcp{}, fmt.Errorf("gcp constructor fails to read options %w", err)
+		}
+	}
+
+	return g, nil
+}
+
+func withGcpConstructorKey(b []byte) func(*Gcp) error {
+	return func(g *Gcp) error {
+		g.keyByte = b
+
+		return nil
+	}
+}
+
+func withGcpConstructorScope(scope []string) func(*Gcp) error {
+	return func(g *Gcp) error {
+		if len(scope) != 0 {
+			g.scope = scope
+		}
+
+		return nil
+	}
+}
+
+func isStructEmpty(object interface{}) bool {
+	// check normal definitions of empty
+	if object == nil {
+		return true
+	} else if object == "" {
+		return true
+	} else if object == false {
+		return true
+	}
+
+	// see if it's a struct
+	if reflect.ValueOf(object).Kind() == reflect.Struct {
+		// and create an empty copy of the struct object to compare against
+		empty := reflect.New(reflect.TypeOf(object)).Elem().Interface()
+		if reflect.DeepEqual(object, empty) {
+			return true
+		}
+	}
+	return false
 }

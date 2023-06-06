@@ -26,7 +26,7 @@ func (g *Gcp) GetOAuth2AccessToken(scope []string) (*oauth2.Token, error) {
 
 	token, err := jwt.TokenSource(ctx).Token()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to obtain Access Token from JWT config with scope %s <%w>", scope, err)
+		return nil, fmt.Errorf("failed to obtain Access Token from JWT config with scope %s <%w>", scope, err)
 	}
 
 	return token, nil
@@ -51,7 +51,7 @@ func (g *Gcp) GetOAuth2IdToken(scope []string) (*oauth2.Token, error) {
 
 	token, err := ts.Token()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to obtain ID Token from JWT Token Source for scope %s <%w>", scope, err)
+		return nil, fmt.Errorf("failed to obtain ID Token from JWT Token Source for scope %s <%w>", scope, err)
 	}
 
 	return token, nil
@@ -61,7 +61,7 @@ func (g *Gcp) GetOAuth2IdToken(scope []string) (*oauth2.Token, error) {
 func getJwtConfig(keyByte []byte, scope []string) (*jwt.Config, error) {
 	jwt, err := google.JWTConfigFromJSON(keyByte, scope...)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to obtain JWT Config for scope %s <%w>", scope, err)
+		return nil, fmt.Errorf("failed to obtain JWT Config for scope %s <%w>", scope, err)
 	}
 
 	return jwt, nil
@@ -71,7 +71,7 @@ func getJwtConfig(keyByte []byte, scope []string) (*jwt.Config, error) {
 func getTokenSource(keyByte []byte, scope []string) (oauth2.TokenSource, error) {
 	ts, err := google.JWTAccessTokenSourceWithScope(keyByte, scope...)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to obtain JWT Token Source for scope %s <%w>", scope, err)
+		return nil, fmt.Errorf("failed to obtain JWT Token Source for scope %s <%w>", scope, err)
 	}
 
 	return ts, nil
