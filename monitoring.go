@@ -10,10 +10,10 @@ import (
 	"google.golang.org/api/option"
 )
 
-func (r *Gcp) QueryTimeSeries(projectId string, query string) ([]*monitoringpb.TimeSeriesData, error) {
+func (g *Gcp) QueryTimeSeries(projectId string, query string) ([]*monitoringpb.TimeSeriesData, error) {
 	ctx := context.Background()
 
-	jwt, err := getJwtConfig(r.keyByte, r.scope)
+	jwt, err := getJwtConfig(g.keyByte, g.scope)
 	if err != nil {
 		return nil, err
 	}

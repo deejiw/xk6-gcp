@@ -12,14 +12,14 @@ import (
 // This function is a method of the `Gcp` struct and is used to obtain an OAuth2 access token for a
 // given set of scopes. It takes in a variable number of scope strings as arguments and returns an
 // `oauth2.Token` and an error.
-func (r *Gcp) GetOAuth2AccessToken(scope []string) (*oauth2.Token, error) {
+func (g *Gcp) GetOAuth2AccessToken(scope []string) (*oauth2.Token, error) {
 	ctx := context.Background()
 
 	if scope == nil {
-		scope = r.scope
+		scope = g.scope
 	}
 
-	jwt, err := getJwtConfig(r.keyByte, r.scope)
+	jwt, err := getJwtConfig(g.keyByte, g.scope)
 	if err != nil {
 		return nil, err
 	}
@@ -39,12 +39,12 @@ func (r *Gcp) GetOAuth2AccessToken(scope []string) (*oauth2.Token, error) {
 // source with the specified scopes and uses it to obtain the ID token by calling the `Token` method on
 // the token source. If there is an error obtaining the token source or the token itself, an error is
 // returned.
-func (r *Gcp) GetOAuth2IdToken(scope []string) (*oauth2.Token, error) {
+func (g *Gcp) GetOAuth2IdToken(scope []string) (*oauth2.Token, error) {
 	if scope == nil {
-		scope = r.scope
+		scope = g.scope
 	}
 
-	ts, err := getTokenSource(r.keyByte, r.scope)
+	ts, err := getTokenSource(g.keyByte, g.scope)
 	if err != nil {
 		return nil, err
 	}

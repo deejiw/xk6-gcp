@@ -2,8 +2,6 @@ module github.com/deejiw/xk6-gcp
 
 go 1.19
 
-// replace google.golang.org/grpc => github.com/grpc/grpc-go v1.51.0
-
 require (
 	cloud.google.com/go/monitoring v1.13.0
 	github.com/dop251/goja v0.0.0-20230531210528-d7324b2d74f7

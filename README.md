@@ -26,7 +26,13 @@ Then:
 ```javascript
 import { Gcp } from 'k6/x/gcp';
 
-const gcpClient = new Gcp()
+const gcp = new Gcp({
+  scope: ['https://www.googleapis.com/auth/cloud-platform']
+})
 export default function() {
+  const accessToken = gcp.getOAuth2AccessToken()
 }
 ```
+
+## Command
+GOOGLE_SERVICE_ACCOUNT_KEY=${GOOGLE_SERVICE_ACCOUNT_KEY} k6 run file.js

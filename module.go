@@ -26,13 +26,13 @@ type (
 	}
 
 	Gcp struct {
-		vu      modules.VU
+		// vu      modules.VU
 		keyByte []byte
 		scope   []string
 	}
 
 	GcpConfig struct {
-		Scope []string
+		scope []string
 	}
 
 	ServiceAccountKey struct {
@@ -90,7 +90,7 @@ func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 		err = rt.ExportTo(c.Argument(0), &options)
 		if err != nil {
 			common.Throw(rt,
-				fmt.Errorf("Gcp constructor expects Scope as it's argument: %w", err))
+				fmt.Errorf("Gcp constructor expects scope as it's argument: %w", err))
 		}
 
 		keyByte, _ := json.Marshal(key)
@@ -98,7 +98,7 @@ func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 		obj := &Gcp{
 			// vu:        mi.vu,
 			keyByte: keyByte,
-			scope:   options.Scope,
+			scope:   options.scope,
 		}
 
 		return rt.ToValue(obj).ToObject(rt)
