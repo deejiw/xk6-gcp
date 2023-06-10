@@ -81,7 +81,7 @@ func (mi *ModuleInstance) Exports() modules.Exports {
 
 func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 	rt := mi.vu.Runtime()
-	const envVar = "GOOGLE_SERVICE_ACCOUNT_KEY"
+	const envKey = "GOOGLE_SERVICE_ACCOUNT_KEY"
 	var options GcpConfig
 
 	err := rt.ExportTo(c.Argument(0), &options)
@@ -90,55 +90,16 @@ func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 			fmt.Errorf("gcp constructor fails to read options: %w", err))
 	}
 
-	// fmt.Printf("%+v\n", options.Key)
-	// fmt.Print(options.Scope)
+	g, err := newGcpConstructor(
+		withGcpConstructorKey(options.Key, envKey),
+		withGcpConstructorScope(options.Scope),
+	)
 
-	if !isStructEmpty(options.Key) {
-		b, err := convertToByte(options.Key)
-		if err != nil {
-			common.Throw(rt, err)
-		}
-
-		g, err := newGcpConstructor(
-			withGcpConstructorKey(b),
-			withGcpConstructorScope(options.Scope),
-		)
-
-		if err != nil {
-			common.Throw(rt, fmt.Errorf("cannot initialize gcp constructor <%w>", err))
-		}
-
-		return rt.ToValue(g).ToObject(rt)
+	if err != nil {
+		common.Throw(rt, fmt.Errorf("cannot initialize gcp constructor <%w>", err))
 	}
 
-	if keyString := os.Getenv(envVar); keyString != "" {
-		key := &ServiceAccountKey{}
-		err := json.Unmarshal([]byte(keyString), &key)
-		if err != nil {
-			common.Throw(rt, fmt.Errorf("cannot unmarshal environment variable %v <%w>", envVar, err))
-		}
-
-		b, err := convertToByte(key)
-		if err != nil {
-			common.Throw(rt, err)
-		}
-
-		g, err := newGcpConstructor(
-			withGcpConstructorKey(b),
-			withGcpConstructorScope(options.Scope),
-		)
-
-		if err != nil {
-			common.Throw(rt, fmt.Errorf("cannot initialize gcp constructor <%w>", err))
-		}
-
-		return rt.ToValue(g).ToObject(rt)
-
-	}
-
-	common.Throw(rt, fmt.Errorf("service account key not found. Please use %s or input 'key' parameter", envVar))
-
-	return nil
+	return rt.ToValue(g).ToObject(rt)
 }
 
 func convertToByte(key interface{}) ([]byte, error) {
@@ -166,11 +127,35 @@ func newGcpConstructor(opts ...Option) (Gcp, error) {
 	return g, nil
 }
 
-func withGcpConstructorKey(b []byte) func(*Gcp) error {
+func withGcpConstructorKey(key ServiceAccountKey, env string) func(*Gcp) error {
 	return func(g *Gcp) error {
-		g.keyByte = b
+		if !isStructEmpty(key) {
+			b, err := convertToByte(key)
+			if err != nil {
+				return err
+			}
+			g.keyByte = b
 
-		return nil
+			return nil
+		}
+
+		if envString := os.Getenv(env); envString != "" {
+			s := &ServiceAccountKey{}
+			err := json.Unmarshal([]byte(envString), &s)
+			if err != nil {
+				return fmt.Errorf("cannot unmarshal environment variable %v <%w>", env, err)
+			}
+
+			b, err := convertToByte(s)
+			if err != nil {
+				return err
+			}
+			g.keyByte = b
+
+			return nil
+		}
+
+		return fmt.Errorf("service account key not found. Please use %s or input 'key' parameter", env)
 	}
 }
 
