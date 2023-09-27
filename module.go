@@ -9,6 +9,7 @@ import (
 	"github.com/dop251/goja"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
+	"google.golang.org/api/sheets/v4"
 )
 
 func init() {
@@ -30,6 +31,7 @@ type (
 		// vu      modules.VU
 		keyByte []byte
 		scope   []string
+		sheet   *sheets.Service
 	}
 
 	GcpConfig struct {
