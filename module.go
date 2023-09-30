@@ -31,7 +31,9 @@ type (
 		// vu      modules.VU
 		keyByte []byte
 		scope   []string
-		sheet   *sheets.Service
+
+		// Client
+		sheet *sheets.Service
 	}
 
 	GcpConfig struct {
