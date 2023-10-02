@@ -131,9 +131,11 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 
 	_, headers := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "A:A")
-	uniqueId := getUniqueId(rows)
+	id := getUniqueId(rows)
+	values["id"] = id
+
 	row := &sheets.ValueRange{
-		Values: [][]interface{}{append([]interface{}{uniqueId}, sortValuesByHeaders(headers, values)[:1]...)},
+		Values: [][]interface{}{sortValuesByHeaders(headers, values)},
 	}
 
 	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
@@ -141,7 +143,7 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 		log.Fatalf("unable to append data into sheet %s <%v>.", sheetName, err)
 	}
 
-	return uniqueId, nil
+	return id, nil
 }
 
 func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId string, sheetName string, filters map[string]string, values map[string]interface{}) (int64, error) {
@@ -160,8 +162,10 @@ func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId s
 		return rowByFilters["id"].(int64), nil
 	}
 
+	values["id"] = id
+
 	row := &sheets.ValueRange{
-		Values: [][]interface{}{append([]interface{}{id}, sortValuesByHeaders(headers, values)[:1]...)},
+		Values: [][]interface{}{sortValuesByHeaders(headers, values)},
 	}
 
 	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
