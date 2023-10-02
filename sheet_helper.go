@@ -60,7 +60,7 @@ func columnIndexToLetter(index int) string {
 	var result string
 
 	for index >= 0 {
-		result = string(index%26+65) + result
+		result = string(rune(index%26+65)) + result
 		index = index/26 - 1
 	}
 
