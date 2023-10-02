@@ -11,8 +11,8 @@ import (
 // Parameters:
 // - rows: a slice of slices of interface{} representing the rows of a Google Sheet.
 // Returns:
-// - int64: a unique ID for a new row.
-func getUniqueId(rows [][]interface{}) int64 {
+// - string: a unique ID for a new row.
+func getUniqueId(rows [][]interface{}) string {
 	var id int64
 
 	if len(rows) > 1 {
@@ -25,7 +25,7 @@ func getUniqueId(rows [][]interface{}) int64 {
 		id = 1
 	}
 
-	return id
+	return strconv.FormatInt(id, 10)
 }
 
 // This function merges two slices of interface{} into a map[string]interface{}.

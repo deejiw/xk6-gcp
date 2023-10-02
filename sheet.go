@@ -146,8 +146,8 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 	return id, nil
 }
 
-func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId string, sheetName string, filters map[string]string, values map[string]interface{}) (int64, error) {
-	var id int64
+func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId string, sheetName string, filters map[string]string, values map[string]interface{}) (string, error) {
+	var id string
 	ctx := context.Background()
 	g.sheetClient()
 
@@ -159,7 +159,7 @@ func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId s
 	if rowByFilters == nil {
 		id = getUniqueId(rows)
 	} else {
-		return rowByFilters["id"].(int64), nil
+		return rowByFilters["id"].(string), nil
 	}
 
 	values["id"] = id
