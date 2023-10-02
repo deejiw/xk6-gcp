@@ -82,6 +82,35 @@ func findHeaderIndex(headers []interface{}, header string) int {
 	return -1
 }
 
+// This function sorts values by headers.
+// Parameters:
+// - headers: a slice of interface{} representing the headers.
+// - values: a map[string]interface{} representing the values to sort.
+// Returns:
+// - []interface{}: a slice of interface{} values sorted by the headers.
+func sortValuesByHeaders(headers []interface{}, values map[string]interface{}) []interface{} {
+	headerMap := make(map[string]int)
+	for i, header := range headers {
+		headerMap[header.(string)] = i
+	}
+
+	// Create the new row data in the correct order
+	var sorted []interface{}
+	for columnName, value := range values {
+		index, found := headerMap[columnName]
+		if !found {
+			log.Fatalf("column '%s' not found in the sheet", columnName)
+		}
+		sorted = append(sorted, value)
+		index++
+		for len(sorted) < index {
+			sorted = append(sorted, nil)
+		}
+	}
+
+	return sorted
+}
+
 // func getSheetName(c *sheets.Service, spreadsheetId string, sheetId int) string {
 // 	res, err := c.Spreadsheets.Get(spreadsheetId).Fields("sheets(properties(sheetId,title))").Do()
 // 	if err != nil || res.HTTPStatusCode != 200 {

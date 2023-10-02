@@ -60,61 +60,6 @@ func (g *Gcp) SpreadsheetAppend(spreadsheetId string, sheetName string, valueRan
 	return "", nil
 }
 
-// Updates a range of cells in a Google Sheet.
-// Parameters:
-// - spreadsheetId: the ID of the Google Sheet.
-// - sheetName: the name of the sheet to update data in.
-// - cellRange: the range of cells to update data in.
-// - valueRange: a slice of interface{} values representing the data to update.
-// Returns:
-// - string: an empty string.
-// - error: an error if one occurred, otherwise nil.
-func (g *Gcp) SpreadsheetUpdate(spreadsheetId string, sheetName string, cellRange string, valueRange []interface{}) (string, error) {
-	ctx := context.Background()
-	g.sheetClient()
-
-	row := &sheets.ValueRange{
-		Values: [][]interface{}{valueRange},
-	}
-
-	res, err := g.sheet.Spreadsheets.Values.Update(spreadsheetId, fmt.Sprintf("%s!%s", sheetName, cellRange), row).ValueInputOption("RAW").Context(ctx).Do()
-	if err != nil || res.HTTPStatusCode != 200 {
-		log.Fatalf("unable to update data into sheet %s range %s <%v>.", sheetName, cellRange, err)
-	}
-
-	return "", nil
-}
-
-// Enhancement to operate Google Sheet with SQL-like parameters.
-// Parameters:
-// - spreadsheetId: the ID of the Google Sheet.
-// - sheetName: the name of the sheet to search data in.
-// - columnName: the name of the column to search data in.
-// - columnValue: the value to search for in the specified column.
-// Returns:
-// - map[string]interface{}: a map of the row data if a match is found.
-// - error: an error if one occurred, otherwise nil.
-func (g *Gcp) SpreadsheetGetRowByColumnValue(spreadsheetId string, sheetName string, columnName string, columnValue string) (map[string]interface{}, error) {
-	cellRange := g.findCellRange(spreadsheetId, sheetName)
-	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, cellRange)
-	headers := rows[0]
-
-	columnIndex := findHeaderIndex(headers, columnName)
-	if columnIndex == -1 {
-		fmt.Printf("No column named %s found in sheet %s", columnName, sheetName)
-		return nil, nil
-	}
-
-	for _, row := range rows {
-		if strings.TrimSpace(row[columnIndex].(string)) == columnValue {
-			return mergeKV(headers, row), nil
-		}
-	}
-
-	fmt.Printf("No value in column %s matches %v", columnName, columnValue)
-	return nil, nil
-}
-
 // Similar to https://pkg.go.dev/google.golang.org/api/sheets/v4#SpreadsheetsService.GetByDataFilter
 // Get a row from a Google Sheet based on filters.
 // Parameters:
@@ -156,15 +101,17 @@ func (g *Gcp) SpreadsheetGetRowByFilters(spreadsheetId string, sheetName string,
 // Returns:
 // - int64: the unique ID of the appended row.
 // - error: an error if one occurred, otherwise nil.
-func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName string, values []interface{}) (int64, error) {
+func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName string, values map[string]interface{}) (int64, error) {
 	ctx := context.Background()
 	g.sheetClient()
 
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "A:A")
 	uniqueId := getUniqueId(rows)
 
+	sorted := sortValuesByHeaders(rows[0], values)
+
 	row := &sheets.ValueRange{
-		Values: [][]interface{}{append([]interface{}{uniqueId}, values...)},
+		Values: [][]interface{}{append([]interface{}{uniqueId}, sorted...)},
 	}
 
 	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
@@ -173,6 +120,35 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 	}
 
 	return uniqueId, nil
+}
+
+func (g *Gcp) SpreadsheetGetRowByFiltersAndAppendIfNotExist(spreadsheetId string, sheetName string, filters map[string]string, values map[string]interface{}) (int64, error) {
+	var id int64
+	ctx := context.Background()
+	g.sheetClient()
+
+	rowByFilters, _ := g.SpreadsheetGetRowByFilters(spreadsheetId, sheetName, filters)
+	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "A:A")
+
+	if rowByFilters == nil {
+
+		id = getUniqueId(rows)
+	} else {
+		return rowByFilters["id"].(int64), nil
+	}
+
+	sorted := sortValuesByHeaders(rows[0], values)
+
+	row := &sheets.ValueRange{
+		Values: [][]interface{}{append([]interface{}{id}, sorted...)},
+	}
+
+	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
+	if err != nil || res.HTTPStatusCode != 200 {
+		log.Fatalf("unable to append data into sheet %s <%v>.", sheetName, err)
+	}
+
+	return id, nil
 }
 
 // This function initializes the Google Sheets client.
