@@ -95,9 +95,8 @@ func (g *Gcp) SpreadsheetUpdate(spreadsheetId string, sheetName string, cellRang
 // - map[string]interface{}: a map of the row data if a match is found.
 // - error: an error if one occurred, otherwise nil.
 func (g *Gcp) SpreadsheetGetRowByFilters(spreadsheetId string, sheetName string, filters map[string]string) (map[string]interface{}, error) {
-	cellRange := g.findCellRange(spreadsheetId, sheetName)
+	cellRange, headers := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, cellRange)
-	headers := rows[0]
 
 	// Find matching rows based on the filters
 	for _, row := range rows {
@@ -130,10 +129,11 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 	ctx := context.Background()
 	g.sheetClient()
 
+	_, headers := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "A:A")
 	uniqueId := getUniqueId(rows)
 	row := &sheets.ValueRange{
-		Values: [][]interface{}{append([]interface{}{uniqueId}, sortValuesByHeaders(rows[0], values)...)},
+		Values: [][]interface{}{append([]interface{}{uniqueId}, sortValuesByHeaders(headers, values)...)},
 	}
 
 	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
@@ -144,23 +144,24 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 	return uniqueId, nil
 }
 
-func (g *Gcp) SpreadsheetGetRowByFiltersAndAppendIfNotExist(spreadsheetId string, sheetName string, filters map[string]string, values map[string]interface{}) (int64, error) {
+func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId string, sheetName string, filters map[string]string, values map[string]interface{}) (int64, error) {
 	var id int64
 	ctx := context.Background()
 	g.sheetClient()
+
+	_, headers := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
 
 	rowByFilters, _ := g.SpreadsheetGetRowByFilters(spreadsheetId, sheetName, filters)
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "A:A")
 
 	if rowByFilters == nil {
-
 		id = getUniqueId(rows)
 	} else {
 		return rowByFilters["id"].(int64), nil
 	}
 
 	row := &sheets.ValueRange{
-		Values: [][]interface{}{append([]interface{}{id}, sortValuesByHeaders(rows[0], values)...)},
+		Values: [][]interface{}{append([]interface{}{id}, sortValuesByHeaders(headers, values)...)},
 	}
 
 	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
@@ -196,7 +197,7 @@ func (g *Gcp) sheetClient() {
 // - sheetName: the name of the sheet to retrieve data from.
 // Returns:
 // - string: the cell range of the first row.
-func (g *Gcp) findCellRange(spreadsheetId string, sheetName string) string {
+func (g *Gcp) findCellRangeAndHeaders(spreadsheetId string, sheetName string) (string, []interface{}) {
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "1:1")
-	return fmt.Sprintf("A:%s", columnIndexToLetter(len(rows[0])-1))
+	return fmt.Sprintf("A:%s", columnIndexToLetter(len(rows[0])-1)), rows[0]
 }
