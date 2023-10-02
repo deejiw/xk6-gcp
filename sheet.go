@@ -93,6 +93,31 @@ func (g *Gcp) SpreadsheetGetRowByFilters(spreadsheetId string, sheetName string,
 	return nil, nil
 }
 
+// Updates a range of cells in a Google Sheet.
+// Parameters:
+// - spreadsheetId: the ID of the Google Sheet.
+// - sheetName: the name of the sheet to update data in.
+// - cellRange: the range of cells to update data in.
+// - valueRange: a slice of interface{} values representing the data to update.
+// Returns:
+// - string: an empty string.
+// - error: an error if one occurred, otherwise nil.
+func (g *Gcp) SpreadsheetUpdate(spreadsheetId string, sheetName string, cellRange string, valueRange []interface{}) (string, error) {
+	ctx := context.Background()
+	g.sheetClient()
+
+	row := &sheets.ValueRange{
+		Values: [][]interface{}{valueRange},
+	}
+
+	res, err := g.sheet.Spreadsheets.Values.Update(spreadsheetId, fmt.Sprintf("%s!%s", sheetName, cellRange), row).ValueInputOption("RAW").Context(ctx).Do()
+	if err != nil || res.HTTPStatusCode != 200 {
+		log.Fatalf("unable to update data into sheet %s range %s <%v>.", sheetName, cellRange, err)
+	}
+
+	return "", nil
+}
+
 // This function appends a row of data to a Google Sheet with a unique ID.
 // Parameters:
 // - spreadsheetId: the ID of the Google Sheet.
