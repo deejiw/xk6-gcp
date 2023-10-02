@@ -133,7 +133,7 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "A:A")
 	uniqueId := getUniqueId(rows)
 	row := &sheets.ValueRange{
-		Values: [][]interface{}{append([]interface{}{uniqueId}, sortValuesByHeaders(headers, values)...)},
+		Values: [][]interface{}{append([]interface{}{uniqueId}, sortValuesByHeaders(headers, values)[:1]...)},
 	}
 
 	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
@@ -161,7 +161,7 @@ func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId s
 	}
 
 	row := &sheets.ValueRange{
-		Values: [][]interface{}{append([]interface{}{id}, sortValuesByHeaders(headers, values)...)},
+		Values: [][]interface{}{append([]interface{}{id}, sortValuesByHeaders(headers, values)[:1]...)},
 	}
 
 	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
