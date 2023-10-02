@@ -11,6 +11,15 @@ import (
 )
 
 // Direct interface from https://pkg.go.dev/google.golang.org/api/sheets/v4#SpreadsheetsValuesService.
+
+// This function retrieves data from a Google Sheet.
+// Parameters:
+// - spreadsheetId: the ID of the Google Sheet.
+// - sheetName: the name of the sheet to retrieve data from.
+// - cellRange: the range of cells to retrieve data from.
+// Returns:
+// - [][]interface{}: a 2D slice of interface{} values representing the retrieved data.
+// - error: an error if one occurred, otherwise nil.
 func (g *Gcp) SpreadsheetGet(spreadsheetId string, sheetName string, cellRange string) ([][]interface{}, error) {
 	g.sheetClient()
 
@@ -27,6 +36,14 @@ func (g *Gcp) SpreadsheetGet(spreadsheetId string, sheetName string, cellRange s
 	return res.Values, nil
 }
 
+// Appends a row of data to a Google Sheet.
+// Parameters:
+// - spreadsheetId: the ID of the Google Sheet.
+// - sheetName: the name of the sheet to append data to.
+// - valueRange: a slice of interface{} values representing the data to append.
+// Returns:
+// - string: an empty string.
+// - error: an error if one occurred, otherwise nil.
 func (g *Gcp) SpreadsheetAppend(spreadsheetId string, sheetName string, valueRange []interface{}) (string, error) {
 	ctx := context.Background()
 	g.sheetClient()
@@ -35,7 +52,7 @@ func (g *Gcp) SpreadsheetAppend(spreadsheetId string, sheetName string, valueRan
 		Values: [][]interface{}{valueRange},
 	}
 
-	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
+	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").InsertDataOption("INSERT_ROWS").Context(ctx).Do()
 	if err != nil || res.HTTPStatusCode != 200 {
 		log.Fatalf("unable to append data into sheet %s <%v>.", sheetName, err)
 	}
@@ -43,6 +60,15 @@ func (g *Gcp) SpreadsheetAppend(spreadsheetId string, sheetName string, valueRan
 	return "", nil
 }
 
+// Updates a range of cells in a Google Sheet.
+// Parameters:
+// - spreadsheetId: the ID of the Google Sheet.
+// - sheetName: the name of the sheet to update data in.
+// - cellRange: the range of cells to update data in.
+// - valueRange: a slice of interface{} values representing the data to update.
+// Returns:
+// - string: an empty string.
+// - error: an error if one occurred, otherwise nil.
 func (g *Gcp) SpreadsheetUpdate(spreadsheetId string, sheetName string, cellRange string, valueRange []interface{}) (string, error) {
 	ctx := context.Background()
 	g.sheetClient()
@@ -60,22 +86,44 @@ func (g *Gcp) SpreadsheetUpdate(spreadsheetId string, sheetName string, cellRang
 }
 
 // Enhancement to operate Google Sheet with SQL-like parameters.
-func (g *Gcp) SpreadsheetGetRowByFirstColumn(spreadsheetId string, sheetName string, firstColumnValue string) (map[string]interface{}, error) {
+// Parameters:
+// - spreadsheetId: the ID of the Google Sheet.
+// - sheetName: the name of the sheet to search data in.
+// - columnName: the name of the column to search data in.
+// - columnValue: the value to search for in the specified column.
+// Returns:
+// - map[string]interface{}: a map of the row data if a match is found.
+// - error: an error if one occurred, otherwise nil.
+func (g *Gcp) SpreadsheetGetRowByColumnValue(spreadsheetId string, sheetName string, columnName string, columnValue string) (map[string]interface{}, error) {
 	cellRange := g.findCellRange(spreadsheetId, sheetName)
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, cellRange)
 	headers := rows[0]
 
+	columnIndex := findHeaderIndex(headers, columnName)
+	if columnIndex == -1 {
+		fmt.Printf("No column named %s found in sheet %s", columnName, sheetName)
+		return nil, nil
+	}
+
 	for _, row := range rows {
-		if strings.TrimSpace(row[0].(string)) == firstColumnValue {
+		if strings.TrimSpace(row[columnIndex].(string)) == columnValue {
 			return mergeKV(headers, row), nil
 		}
 	}
 
-	fmt.Printf("No value in column %s matches %v", headers[0], firstColumnValue)
+	fmt.Printf("No value in column %s matches %v", columnName, columnValue)
 	return nil, nil
 }
 
 // Similar to https://pkg.go.dev/google.golang.org/api/sheets/v4#SpreadsheetsService.GetByDataFilter
+// Get a row from a Google Sheet based on filters.
+// Parameters:
+// - spreadsheetId: the ID of the Google Sheet.
+// - sheetName: the name of the sheet to search data in.
+// - filters: a map of column names to values to search for in the specified column.
+// Returns:
+// - map[string]interface{}: a map of the row data if a match is found.
+// - error: an error if one occurred, otherwise nil.
 func (g *Gcp) SpreadsheetGetRowByFilters(spreadsheetId string, sheetName string, filters map[string]string) (map[string]interface{}, error) {
 	cellRange := g.findCellRange(spreadsheetId, sheetName)
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, cellRange)
@@ -100,6 +148,14 @@ func (g *Gcp) SpreadsheetGetRowByFilters(spreadsheetId string, sheetName string,
 	return nil, nil
 }
 
+// This function appends a row of data to a Google Sheet with a unique ID.
+// Parameters:
+// - spreadsheetId: the ID of the Google Sheet.
+// - sheetName: the name of the sheet to append data to.
+// - values: a slice of interface{} values representing the data to append.
+// Returns:
+// - int64: the unique ID of the appended row.
+// - error: an error if one occurred, otherwise nil.
 func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName string, values []interface{}) (int64, error) {
 	ctx := context.Background()
 	g.sheetClient()
@@ -119,6 +175,7 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 	return uniqueId, nil
 }
 
+// This function initializes the Google Sheets client.
 func (g *Gcp) sheetClient() {
 	if g.sheet == nil {
 		ctx := context.Background()
@@ -137,6 +194,12 @@ func (g *Gcp) sheetClient() {
 	}
 }
 
+// This function returns the cell range of the first row of a Google Sheet.
+// Parameters:
+// - spreadsheetId: the ID of the Google Sheet.
+// - sheetName: the name of the sheet to retrieve data from.
+// Returns:
+// - string: the cell range of the first row.
 func (g *Gcp) findCellRange(spreadsheetId string, sheetName string) string {
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "1:1")
 	return fmt.Sprintf("A:%s", columnIndexToLetter(len(rows[0])-1))
