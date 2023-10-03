@@ -26,7 +26,7 @@ func (g *Gcp) SpreadsheetGet(spreadsheetId string, sheetName string, cellRange s
 
 	res, err := g.sheet.Spreadsheets.Values.Get(spreadsheetId, fmt.Sprintf("%s!%s", sheetName, cellRange)).Do()
 	if err != nil || res.HTTPStatusCode != 200 {
-		log.Fatalf("unable to get data from range %s in sheet %s  <%v>.", cellRange, sheetName, err)
+		return nil, fmt.Errorf("unable to get data from range %s in sheet %s  <%v>", cellRange, sheetName, err)
 	}
 
 	if len(res.Values) == 0 {
@@ -55,7 +55,7 @@ func (g *Gcp) SpreadsheetAppend(spreadsheetId string, sheetName string, valueRan
 
 	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").InsertDataOption("INSERT_ROWS").Context(ctx).Do()
 	if err != nil || res.HTTPStatusCode != 200 {
-		log.Fatalf("unable to append data into sheet %s <%v>.", sheetName, err)
+		return "", fmt.Errorf("unable to append data into sheet %s <%v>", sheetName, err)
 	}
 
 	return "", nil
@@ -80,7 +80,7 @@ func (g *Gcp) SpreadsheetUpdate(spreadsheetId string, sheetName string, cellRang
 
 	res, err := g.sheet.Spreadsheets.Values.Update(spreadsheetId, fmt.Sprintf("%s!%s", sheetName, cellRange), row).ValueInputOption("RAW").Context(ctx).Do()
 	if err != nil || res.HTTPStatusCode != 200 {
-		log.Fatalf("unable to update data into sheet %s range %s <%v>.", sheetName, cellRange, err)
+		return "", fmt.Errorf("unable to update data into sheet %s range %s <%v>", sheetName, cellRange, err)
 	}
 
 	return "", nil
@@ -141,7 +141,7 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 
 	res, err := g.sheet.Spreadsheets.Values.Append(spreadsheetId, sheetName, row).ValueInputOption("RAW").Context(ctx).Do()
 	if err != nil || res.HTTPStatusCode != 200 {
-		log.Fatalf("unable to append data into sheet %s <%v>.", sheetName, err)
+		return 0, fmt.Errorf("unable to append data into sheet %s <%v>", sheetName, err)
 	}
 
 	return id, nil
@@ -160,9 +160,15 @@ func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId s
 	if rowByFilters == nil {
 		id = getUniqueId(rows)
 	} else {
-		i, err := strconv.ParseInt(rowByFilters["id"].(string), 0, 64)
+		fmt.Println(rowByFilters)
+		idStr, ok := rowByFilters["id"].(string)
+		if !ok {
+			return 0, fmt.Errorf("unable to convert id to string")
+		}
+
+		i, err := strconv.ParseInt(idStr, 0, 64)
 		if err != nil {
-			log.Fatalf("unable to parse string to int64 for %s <%v>.", rowByFilters["id"].(string), err)
+			return 0, fmt.Errorf("unable to parse string to int64 for %s: %v", idStr, err)
 		}
 		return i, nil
 	}
