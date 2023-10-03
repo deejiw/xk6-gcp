@@ -160,7 +160,7 @@ func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId s
 	if rowByFilters == nil {
 		id = getUniqueId(rows)
 	} else {
-		fmt.Println(rowByFilters)
+		// fmt.Println(rowByFilters)
 		idStr, ok := rowByFilters["id"].(string)
 		if !ok {
 			return 0, fmt.Errorf("unable to convert id to string")
