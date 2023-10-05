@@ -30,8 +30,7 @@ func (g *Gcp) SpreadsheetGet(spreadsheetId string, sheetName string, cellRange s
 	}
 
 	if len(res.Values) == 0 {
-		fmt.Printf("No data found in range %s on sheet %s.", cellRange, sheetName)
-		return nil, nil
+		return nil, fmt.Errorf("no data found in range %s on sheet %s", cellRange, sheetName)
 	}
 
 	return res.Values, nil
@@ -96,7 +95,10 @@ func (g *Gcp) SpreadsheetUpdate(spreadsheetId string, sheetName string, cellRang
 // - map[string]interface{}: a map of the row data if a match is found.
 // - error: an error if one occurred, otherwise nil.
 func (g *Gcp) SpreadsheetGetRowByFilters(spreadsheetId string, sheetName string, filters map[string]string) (map[string]interface{}, error) {
-	cellRange, headers := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
+	cellRange, headers, err := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
+	if err != nil {
+		return nil, err
+	}
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, cellRange)
 
 	// Find matching rows based on the filters
@@ -130,7 +132,11 @@ func (g *Gcp) SpreadsheetAppendWithUniqueId(spreadsheetId string, sheetName stri
 	ctx := context.Background()
 	g.sheetClient()
 
-	_, headers := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
+	_, headers, err := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
+	if err != nil {
+		return 0, err
+	}
+
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "A:A")
 	id := getUniqueId(rows)
 	values["id"] = id
@@ -152,7 +158,10 @@ func (g *Gcp) SpreadsheetGetUniqueIdByFiltersAndAppendIfNotExist(spreadsheetId s
 	ctx := context.Background()
 	g.sheetClient()
 
-	_, headers := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
+	_, headers, err := g.findCellRangeAndHeaders(spreadsheetId, sheetName)
+	if err != nil {
+		return 0, err
+	}
 
 	rowByFilters, _ := g.SpreadsheetGetRowByFilters(spreadsheetId, sheetName, filters)
 	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "A:A")
@@ -212,7 +221,15 @@ func (g *Gcp) sheetClient() {
 // - sheetName: the name of the sheet to retrieve data from.
 // Returns:
 // - string: the cell range of the first row.
-func (g *Gcp) findCellRangeAndHeaders(spreadsheetId string, sheetName string) (string, []interface{}) {
-	rows, _ := g.SpreadsheetGet(spreadsheetId, sheetName, "1:1")
-	return fmt.Sprintf("A:%s", columnIndexToLetter(len(rows[0])-1)), rows[0]
+func (g *Gcp) findCellRangeAndHeaders(spreadsheetId string, sheetName string) (string, []interface{}, error) {
+	rows, err := g.SpreadsheetGet(spreadsheetId, sheetName, "1:1")
+	if err != nil {
+		return "", nil, err
+	}
+
+	if len(rows) < 1 {
+		return "", nil, fmt.Errorf("no headers found on sheet %s!%s", spreadsheetId, sheetName)
+	}
+
+	return fmt.Sprintf("A:%s", columnIndexToLetter(len(rows[0])-1)), rows[0], nil
 }
