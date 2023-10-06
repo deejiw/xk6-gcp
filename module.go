@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/dop251/goja"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
@@ -34,7 +35,8 @@ type (
 		projectId string
 
 		// Client
-		sheet *sheets.Service
+		sheet  *sheets.Service
+		pubsub *pubsub.Client
 	}
 
 	GcpConfig struct {
