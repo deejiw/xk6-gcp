@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/option"
@@ -27,12 +28,12 @@ func (g *Gcp) pubsubClient() {
 	}
 }
 
-func (g *Gcp) GetTopic(topic string) *pubsub.Topic {
+func (g *Gcp) PubsubTopic(topic string) *pubsub.Topic {
 	g.pubsubClient()
 	return g.pubsub.Topic(topic)
 }
 
-func (g *Gcp) Publish(t *pubsub.Topic, message map[string]interface{}) (string, error) {
+func (g *Gcp) PubsubPublish(t *pubsub.Topic, message map[string]interface{}) (string, error) {
 	ctx := context.Background()
 
 	b, err := json.Marshal(message)
@@ -51,29 +52,29 @@ func (g *Gcp) Publish(t *pubsub.Topic, message map[string]interface{}) (string, 
 	return msgId, nil
 }
 
-func (g *Gcp) GetSubscription(subscription string) *pubsub.Subscription {
+func (g *Gcp) PubsubSubscription(subscription string) *pubsub.Subscription {
 	g.pubsubClient()
 	return g.pubsub.Subscription(subscription)
 }
 
-func (g *Gcp) Receive(s *pubsub.Subscription) ([]map[string]interface{}, error) {
-	ctx := context.Background()
-	list := []map[string]interface{}{}
+func (g *Gcp) PubsubReceive(s *pubsub.Subscription, limit int) (map[string]interface{}, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	s.ReceiveSettings.MaxOutstandingMessages = limit
+	s.ReceiveSettings.MaxExtension = 10 * time.Second
+	var message map[string]interface{}
 	err := s.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
-		var data map[string]interface{}
-		err := json.Unmarshal(m.Data, &data)
-
+		err := json.Unmarshal(m.Data, &message)
 		if err != nil {
 			log.Fatalf("unable to unmarshal subscription data <%v>", err)
 		}
 
-		list = append(list, data)
 		m.Ack()
+		cancel()
 	})
 
 	if err != nil {
 		return nil, fmt.Errorf("unable to receive data from subscription %s <%v>", s, err)
 	}
 
-	return list, nil
+	return message, nil
 }
