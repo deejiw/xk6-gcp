@@ -3,6 +3,7 @@ package gcp
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 
@@ -184,7 +185,10 @@ func withGcpConstructorProjectId(projectId string) func(*Gcp) error {
 			g.projectId = projectId
 		} else {
 			s := &ServiceAccountKey{}
-			json.Unmarshal(g.keyByte, s)
+			err := json.Unmarshal(g.keyByte, s)
+			if err != nil {
+				log.Fatalf("unable to unmarshal byte <%v>", err)
+			}
 			g.projectId = s.ProjectID
 		}
 
