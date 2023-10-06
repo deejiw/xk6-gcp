@@ -29,16 +29,18 @@ type (
 
 	Gcp struct {
 		// vu      modules.VU
-		keyByte []byte
-		scope   []string
+		keyByte   []byte
+		scope     []string
+		projectId string
 
 		// Client
 		sheet *sheets.Service
 	}
 
 	GcpConfig struct {
-		Key   ServiceAccountKey
-		Scope []string
+		Key       ServiceAccountKey
+		Scope     []string
+		ProjectId string
 	}
 
 	Option func(*Gcp) error
@@ -97,6 +99,7 @@ func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 	g, err := newGcpConstructor(
 		withGcpConstructorKey(options.Key, envKey),
 		withGcpConstructorScope(options.Scope),
+		withGcpConstructorProjectId(options.ProjectId),
 	)
 
 	if err != nil {
@@ -167,6 +170,20 @@ func withGcpConstructorScope(scope []string) func(*Gcp) error {
 	return func(g *Gcp) error {
 		if len(scope) != 0 {
 			g.scope = scope
+		}
+
+		return nil
+	}
+}
+
+func withGcpConstructorProjectId(projectId string) func(*Gcp) error {
+	return func(g *Gcp) error {
+		if projectId != "" {
+			g.projectId = projectId
+		} else {
+			s := &ServiceAccountKey{}
+			json.Unmarshal(g.keyByte, s)
+			g.projectId = s.ProjectID
 		}
 
 		return nil
