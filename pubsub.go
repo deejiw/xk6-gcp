@@ -57,9 +57,9 @@ func (g *Gcp) PubsubSubscription(subscription string) *pubsub.Subscription {
 	return g.pubsub.Subscription(subscription)
 }
 
-func (g *Gcp) PubsubReceive(s *pubsub.Subscription, limit int) (map[string]interface{}, error) {
+func (g *Gcp) PubsubReceive(s *pubsub.Subscription) (map[string]interface{}, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	s.ReceiveSettings.MaxOutstandingMessages = limit
+	s.ReceiveSettings.MaxOutstandingMessages = 1
 	s.ReceiveSettings.MaxExtension = 10 * time.Second
 	var message map[string]interface{}
 	err := s.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
