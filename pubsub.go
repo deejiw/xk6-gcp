@@ -57,24 +57,24 @@ func (g *Gcp) PubsubSubscription(subscription string) *pubsub.Subscription {
 	return g.pubsub.Subscription(subscription)
 }
 
-func (g *Gcp) PubsubReceive(s *pubsub.Subscription) (map[string]interface{}, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	s.ReceiveSettings.MaxOutstandingMessages = 1
-	s.ReceiveSettings.MaxExtension = 10 * time.Second
-	var message map[string]interface{}
+func (g *Gcp) PubsubReceive(s *pubsub.Subscription, limit int, timeout int) ([]map[string]interface{}, error) {
+	ctx := context.Background()
+	s.ReceiveSettings.MaxOutstandingMessages = limit
+	s.ReceiveSettings.MaxExtension = time.Duration(timeout) * time.Second
+	var list []map[string]interface{}
 	err := s.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
+		var message map[string]interface{}
 		err := json.Unmarshal(m.Data, &message)
 		if err != nil {
 			log.Fatalf("unable to unmarshal subscription data <%v>", err)
 		}
-
+		list = append(list, message)
 		m.Ack()
-		cancel()
 	})
 
 	if err != nil {
 		return nil, fmt.Errorf("unable to receive data from subscription %s <%v>", s, err)
 	}
 
-	return message, nil
+	return list, nil
 }
