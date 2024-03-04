@@ -8,18 +8,17 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"google.golang.org/api/option"
 )
 
 // This function initializes Google PubSub client.
 func (g *Gcp) pubsubClient() {
 	if g.pubsub == nil {
 		ctx := context.Background()
-		jwt, err := getJwtConfig(g.keyByte, g.scope)
+		_, err := getJwtConfig(g.keyByte, g.scope)
 		if err != nil {
 			log.Fatalf("could not get JWT config with scope %s <%v>.", g.scope, err)
 		}
-		client, err := pubsub.NewClient(ctx, g.projectId, option.WithTokenSource(jwt.TokenSource(ctx)))
+		client, err := pubsub.NewClient(ctx, pubsub.DetectProjectID)
 		if err != nil {
 			log.Fatalf("could not initialize PubSub client <%v>", err)
 		}
