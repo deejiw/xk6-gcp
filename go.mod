@@ -1,4 +1,4 @@
-module github.com/deejiw/xk6-gcp
+module github.com/zeals-co-ltd/xk6-gcp
 
 go 1.19
 
