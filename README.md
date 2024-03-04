@@ -18,7 +18,7 @@ Then:
 
 2. Build the binary:
   ```shell
-  $ xk6 build --with github.com/deejiw/xk6-gcp@latest
+  $ xk6 build --with github.com/zeals-co-ltd/xk6-gcp@latest
   ```
 
 ## Example
