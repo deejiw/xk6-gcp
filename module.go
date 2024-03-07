@@ -136,8 +136,37 @@ func newGcpConstructor(opts ...Option) (Gcp, error) {
 	return g, nil
 }
 
-func withGcpConstructorKey(_ ServiceAccountKey, _ string) func(*Gcp) error {
-	return nil
+func withGcpConstructorKey(key ServiceAccountKey, env string) func(*Gcp) error {
+	return func(g *Gcp) error {
+		return nil
+		//if !isStructEmpty(key) {
+		//	b, err := convertToByte(key)
+		//	if err != nil {
+		//		return err
+		//	}
+		//	g.keyByte = b
+		//
+		//	return nil
+		//}
+		//
+		//if envString := os.Getenv(env); envString != "" {
+		//	s := &ServiceAccountKey{}
+		//	err := json.Unmarshal([]byte(envString), &s)
+		//	if err != nil {
+		//		return fmt.Errorf("cannot unmarshal environment variable %v <%w>", env, err)
+		//	}
+		//
+		//	b, err := convertToByte(s)
+		//	if err != nil {
+		//		return err
+		//	}
+		//	g.keyByte = b
+		//
+		//	return nil
+		//}
+		//
+		//return fmt.Errorf("service account key not found. Please use %s or input 'key' parameter", env)
+	}
 }
 
 func withGcpConstructorScope(scope []string) func(*Gcp) error {
