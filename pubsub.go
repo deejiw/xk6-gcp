@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/option"
 )
 
@@ -15,11 +17,25 @@ import (
 func (g *Gcp) pubsubClient() {
 	if g.pubsub == nil {
 		ctx := context.Background()
-		jwt, err := getJwtConfig(g.keyByte, g.scope)
-		if err != nil {
-			log.Fatalf("could not get JWT config with scope %s <%v>.", g.scope, err)
+
+		var err error
+		var client *pubsub.Client
+		var options []option.ClientOption
+		var jwt *jwt.Config
+
+		if g.emulatorHost != "" {
+			os.Setenv("PUBSUB_EMULATOR_HOST", g.emulatorHost)
+			// Emulators has no capability to authenticate
+			options = append(options, option.WithoutAuthentication())
+		} else {
+			jwt, err = getJwtConfig(g.keyByte, g.scope)
+			if err != nil {
+				log.Fatalf("could not get JWT config with scope %s <%v>.", g.scope, err)
+			}
+			options = append(options, option.WithTokenSource(jwt.TokenSource(ctx)))
 		}
-		client, err := pubsub.NewClient(ctx, g.projectId, option.WithTokenSource(jwt.TokenSource(ctx)))
+
+		client, err = pubsub.NewClient(ctx, g.projectId, options...)
 		if err != nil {
 			log.Fatalf("could not initialize PubSub client <%v>", err)
 		}

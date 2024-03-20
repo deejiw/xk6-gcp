@@ -31,9 +31,10 @@ type (
 
 	Gcp struct {
 		// vu      modules.VU
-		keyByte   []byte
-		scope     []string
-		projectId string
+		emulatorHost string
+		keyByte      []byte
+		scope        []string
+		projectId    string
 
 		// Client
 		sheet  *sheets.Service
@@ -41,9 +42,11 @@ type (
 	}
 
 	GcpConfig struct {
-		Key       ServiceAccountKey
-		Scope     []string
-		ProjectId string
+		// All gcloud emulator has to set XXX_EMULATOR_HOST environment variable
+		EmulatorHost string
+		Key          ServiceAccountKey
+		Scope        []string
+		ProjectId    string
 	}
 
 	Option func(*Gcp) error
@@ -100,6 +103,7 @@ func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 	}
 
 	g, err := newGcpConstructor(
+		withGcpEmulatorHost(options.EmulatorHost),
 		withGcpConstructorKey(options.Key, envKey),
 		withGcpConstructorScope(options.Scope),
 		withGcpConstructorProjectId(options.ProjectId),
@@ -165,6 +169,11 @@ func withGcpConstructorKey(key ServiceAccountKey, env string) func(*Gcp) error {
 			return nil
 		}
 
+		// Emulators doesn't need service account
+		if g.emulatorHost != "" {
+			return nil
+		}
+
 		return fmt.Errorf("service account key not found. Please use %s or input 'key' parameter", env)
 	}
 }
@@ -190,6 +199,16 @@ func withGcpConstructorProjectId(projectId string) func(*Gcp) error {
 				log.Fatalf("unable to unmarshal byte <%v>", err)
 			}
 			g.projectId = s.ProjectID
+		}
+
+		return nil
+	}
+}
+
+func withGcpEmulatorHost(host string) func(*Gcp) error {
+	return func(g *Gcp) error {
+		if host != "" {
+			g.emulatorHost = host
 		}
 
 		return nil
