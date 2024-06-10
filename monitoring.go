@@ -23,7 +23,6 @@ func (g *Gcp) QueryTimeSeries(projectId string, query string) ([]*monitoringpb.T
 	}
 
 	c, err := queryClient(ctx, jwt.TokenSource(ctx))
-
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,6 @@ func (g *Gcp) QueryTimeSeries(projectId string, query string) ([]*monitoringpb.T
 // The function initializes a query client for Google Cloud Monitoring using a token source.
 func queryClient(ctx context.Context, ts oauth2.TokenSource) (*monitoring.QueryClient, error) {
 	c, err := monitoring.NewQueryClient(ctx, option.WithTokenSource(ts))
-
 	if err != nil {
 		return nil, fmt.Errorf("could not initialize query client <%w>", err)
 	}
