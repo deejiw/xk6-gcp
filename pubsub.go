@@ -60,7 +60,6 @@ func (g *Gcp) PubsubPublish(t *pubsub.Topic, message map[string]interface{}) (st
 	res := t.Publish(ctx, &pubsub.Message{Data: b})
 
 	msgId, err := res.Get(ctx)
-
 	if err != nil {
 		return "", fmt.Errorf("failed to get message ID <%v>", err)
 	}
@@ -87,7 +86,6 @@ func (g *Gcp) PubsubReceive(s *pubsub.Subscription, limit int, timeout int) ([]m
 		list = append(list, message)
 		m.Ack()
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("unable to receive data from subscription %s <%v>", s, err)
 	}

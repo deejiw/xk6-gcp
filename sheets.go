@@ -206,7 +206,6 @@ func (g *Gcp) sheetClient() {
 		}
 
 		c, err := sheets.NewService(ctx, option.WithTokenSource(jwt.TokenSource(ctx)))
-
 		if err != nil {
 			log.Fatalf("could not initialize Sheets client <%v>.", err)
 		}
