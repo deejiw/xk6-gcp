@@ -8,7 +8,7 @@ import (
 	"reflect"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/dop251/goja"
+	"github.com/grafana/sobek"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
 	"google.golang.org/api/sheets/v4"
@@ -91,7 +91,7 @@ func (mi *ModuleInstance) Exports() modules.Exports {
 	}
 }
 
-func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
+func (mi *ModuleInstance) newGcp(c sobek.ConstructorCall) *sobek.Object {
 	rt := mi.vu.Runtime()
 	const envKey = "GOOGLE_SERVICE_ACCOUNT_KEY"
 	var options GcpConfig
@@ -108,7 +108,6 @@ func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 		withGcpConstructorScope(options.Scope),
 		withGcpConstructorProjectId(options.ProjectId),
 	)
-
 	if err != nil {
 		common.Throw(rt, fmt.Errorf("cannot initialize gcp constructor <%w>", err))
 	}
@@ -118,7 +117,6 @@ func (mi *ModuleInstance) newGcp(c goja.ConstructorCall) *goja.Object {
 
 func convertToByte(key interface{}) ([]byte, error) {
 	b, err := json.Marshal(key)
-
 	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal key <%w>", err)
 	}
